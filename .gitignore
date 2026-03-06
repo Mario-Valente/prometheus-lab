@@ -1,0 +1,7 @@
+.env
+.DS_Store
+/app/prometheus-app
+/scripts/*.log
+*.tmp
+node_modules/
+dist/
