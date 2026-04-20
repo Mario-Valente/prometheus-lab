@@ -1,0 +1,95 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fiber-prometheus-app
+  labels:
+    app: fiber-prometheus-app
+    team: development
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: fiber-prometheus-app
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+    honorLabels: false
+    metricRelabelings:
+    - sourceLabels: [__name__]
+      regex: 'fiber_.*'
+      targetLabel: '__tmp_fiber_metric'
+    - sourceLabels: [__tmp_fiber_metric]
+      targetLabel: 'service'
+      replacement: 'fiber-prometheus-app'
+    - regex: '__tmp_fiber_metric'
+      action: labeldrop
+  namespaceSelector:
+    matchNames:
+    - default
+  jobLabel: app
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fiber-prometheus-app-rules
+  labels:
+    app: fiber-prometheus-app
+    release: prometheus
+spec:
+  groups:
+  - name: fiber-prometheus-app.rules
+    interval: 30s
+    rules:
+    - alert: FiberAppHighErrorRate
+      expr: |
+        (
+          rate(fiber_http_requests_total{status=~"5.."}[5m]) / 
+          rate(fiber_http_requests_total[5m])
+        ) > 0.05
+      for: 2m
+      labels:
+        severity: warning
+        service: fiber-prometheus-app
+      annotations:
+        summary: "High error rate detected in Fiber app"
+        description: "Fiber app {{ $labels.instance }} has error rate of {{ $value | humanizePercentage }} for the last 5 minutes"
+
+    - alert: FiberAppHighLatency
+      expr: |
+        histogram_quantile(0.95, 
+          rate(fiber_http_request_duration_seconds_bucket[5m])
+        ) > 1.0
+      for: 3m
+      labels:
+        severity: warning
+        service: fiber-prometheus-app
+      annotations:
+        summary: "High latency detected in Fiber app"
+        description: "Fiber app {{ $labels.instance }} has 95th percentile latency of {{ $value }}s"
+
+    - alert: FiberAppDown
+      expr: up{job="fiber-prometheus-app"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        service: fiber-prometheus-app
+      annotations:
+        summary: "Fiber app is down"
+        description: "Fiber app instance {{ $labels.instance }} has been down for more than 1 minute"
+
+    - alert: FiberAppHighMemoryUsage
+      expr: |
+        (
+          container_memory_working_set_bytes{pod=~"fiber-prometheus-app-.*"} / 
+          container_spec_memory_limit_bytes{pod=~"fiber-prometheus-app-.*"}
+        ) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+        service: fiber-prometheus-app
+      annotations:
+        summary: "High memory usage in Fiber app"
+        description: "Pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit"

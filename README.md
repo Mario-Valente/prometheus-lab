@@ -35,12 +35,16 @@ Lab prático de Prometheus com Kind, kube-prometheus-stack e aplicação Go exem
 
 kind-config.yaml         - Configuração do Kind cluster
 prometheus-values.yaml   - Valores Helm do kube-prometheus-stack
-app/                     - Aplicação Go que expõe métricas
+app/                     - Aplicação Go original com net/http
+fiber-app/               - 🆕 Aplicação Go com Fiber + ServiceMonitor
+k8s/                     - Manifestos Kubernetes
 scripts/
   start.sh              - Cria cluster e instala stack
   validate.sh           - Valida todo o setup
   cleanup.sh            - Remove tudo
-  load-test.js          - Script K6 para gerar carga
+  load-test.js          - Script K6 para gerar carga (app original)
+  deploy-fiber-app.sh   - 🆕 Deploy do novo app Fiber
+  fiber-load-test.js    - 🆕 Teste de carga para app Fiber
 
 ## Componentes Instalados
 
@@ -50,6 +54,39 @@ Alertmanager          - Gerenciamento de alertas
 Kube-state-metrics    - Métricas do Kubernetes
 Node-exporter         - Métricas de hardware
 Aplicação Go          - App exemplo que expõe métricas
+Fiber App             - 🆕 Nova app Go com Fiber + ServiceMonitor
+
+## 🆕 Novo App Fiber com ServiceMonitor
+
+Este projeto agora inclui uma segunda aplicação Go construída com Fiber que demonstra:
+
+### Principais diferenças da app original:
+- **Framework**: Fiber v2 (mais performático que net/http)
+- **Descoberta**: ServiceMonitor ao invés de annotations
+- **Métricas**: Auto-instrumentação mais completa
+- **Alertas**: PrometheusRule integrado
+- **API**: Endpoints RESTful completos
+
+### Deploy rápido:
+```bash
+./scripts/deploy-fiber-app.sh
+```
+
+### Acesso (após port-forward):
+```bash
+kubectl port-forward service/fiber-prometheus-app 8081:8080
+```
+
+- Health: http://localhost:8081/health
+- Métricas: http://localhost:8081/metrics  
+- API Users: http://localhost:8081/api/v1/users
+
+### Teste de carga:
+```bash
+node scripts/fiber-load-test.js
+```
+
+📖 **Documentação completa**: [fiber-app/README.md](fiber-app/README.md)
 
 ## Uso da Aplicação Go
 

@@ -60,7 +60,7 @@ kubectl apply -f k8s/app-deployment.yaml
 echo ""
 echo "[7/7] Waiting for Deployments to be Ready..."
 kubectl rollout status deployment/prometheus-app --timeout=2m
-kubectl rollout status deployment/prometheus-kube-prometheus-prometheus --timeout=2m
+kubectl rollout status statefulset/prometheus-prometheus-kube-prometheus-prometheus --timeout=2m
 kubectl rollout status deployment/prometheus-grafana --timeout=2m
 
 echo ""

@@ -1,7 +1,7 @@
 FROM golang:1.21-alpine AS builder
 WORKDIR /app
 COPY go.mod ./
-COPY go.sum* ./  # Conditional copy - matches go.sum if it exists, does not fail if missing
+COPY go.sum* ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o prometheus-app .
