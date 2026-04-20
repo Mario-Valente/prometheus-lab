@@ -35,6 +35,7 @@ grafana:
     size: 5Gi
 
 alertmanager:
+  enabled: true
   alertmanagerSpec:
     retention: 120h
     storage:
@@ -44,6 +45,30 @@ alertmanager:
           resources:
             requests:
               storage: 2Gi
+  config:
+    global:
+      resolve_timeout: 5m
+      slack_api_url: 'YOUR_SLACK_WEBHOOK_URL_HERE'
+    route:
+      receiver: 'slack-notifications'
+      group_by: ['alertname', 'cluster', 'service', 'instance']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+    receivers:
+      - name: 'slack-notifications'
+        slack_configs:
+          - channel: '#alerts'
+            title: '{{ .GroupLabels.alertname }}'
+            text: |
+              *Alert:* {{ .GroupLabels.alertname }}
+              *Severity:* {{ .GroupLabels.severity }}
+              {{ range .Alerts }}
+              *Description:* {{ .Annotations.description }}
+              *Instance:* {{ .Labels.instance }}
+              {{ end }}
+            send_resolved: true
+            color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
 
 kubeStateMetrics:
   enabled: true
