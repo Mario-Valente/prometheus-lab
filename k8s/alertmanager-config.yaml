@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: global-alertmanager-config
+  namespace: default
+spec:
+  route:
+    receiver: 'slack-notifications'
+    groupBy: ['alertname']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 12h
+  receivers:
+    - name: 'slack-notifications'
+      slackConfigs:
+        - channel: '#alertas'
+          title: '{{ .GroupLabels.alertname }}'
+          sendResolved: true
+          iconURL: https://avatars3.githubusercontent.com/u/3380462
+          color: |-
+            {{ if eq .Status "firing" -}}
+              {{ if eq .CommonLabels.severity "warning" -}}
+                warning
+              {{- else if eq .CommonLabels.severity "critical" -}}
+                danger
+              {{- else -}}
+                #439FE0
+              {{- end -}}
+            {{ else -}}
+              good
+            {{- end }}
+          text: |-
+            {{- if eq .CommonLabels.severity "critical" -}}
+              *Severity:* `Critical`
+            {{- else if eq .CommonLabels.severity "warning" -}}
+              *Severity:* `Warning`
+            {{- else if eq .CommonLabels.severity "info" -}}
+              *Severity:* `Info`
+            {{- else -}}
+              *Severity:* :question: {{ .CommonLabels.severity }}
+            {{- end }}
+
+            {{- if (index .Alerts 0).Annotations.summary }}
+              {{- "\n" -}}
+              *Summary:* {{ (index .Alerts 0).Annotations.summary }}
+            {{- end }}
+
+            {{ range .Alerts }}
+              {{- if .Annotations.description }}
+                {{- "\n" -}}
+                • {{ .Annotations.description }}
+                {{- "\n" -}}
+              {{- end }}
+            {{- end }}
+          apiURL: 
+           key: SLACK_WEBHOOK_URL
+           name: slack-webhook

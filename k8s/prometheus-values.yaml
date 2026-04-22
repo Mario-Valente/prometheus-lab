@@ -45,30 +45,17 @@ alertmanager:
           resources:
             requests:
               storage: 2Gi
+    alertmanagerConfiguration:
+      name: global-alertmanager-config 
   config:
     global:
       resolve_timeout: 5m
-      slack_api_url: 'YOUR_SLACK_WEBHOOK_URL_HERE'
     route:
-      receiver: 'slack-notifications'
-      group_by: ['alertname', 'cluster', 'service', 'instance']
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 12h
+      receiver: 'null'
     receivers:
-      - name: 'slack-notifications'
-        slack_configs:
-          - channel: '#alerts'
-            title: '{{ .GroupLabels.alertname }}'
-            text: |
-              *Alert:* {{ .GroupLabels.alertname }}
-              *Severity:* {{ .GroupLabels.severity }}
-              {{ range .Alerts }}
-              *Description:* {{ .Annotations.description }}
-              *Instance:* {{ .Labels.instance }}
-              {{ end }}
-            send_resolved: true
-            color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+      - name: 'null'
+  # Configurações específicas definidas em AlertmanagerConfig(s)
+  # Ver: k8s/alertmanager-config.yaml
 
 kubeStateMetrics:
   enabled: true
